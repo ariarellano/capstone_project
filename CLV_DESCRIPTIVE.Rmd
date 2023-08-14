@@ -1,0 +1,301 @@
+---
+title: "CLV_DESCRIPTIVE"
+author: "Ariana Arellano"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+```{r}
+#install.packages("tidyverse")
+#install.packages("tidyr")
+#install.packages("haven")
+library(tidyverse)
+library(tidyr)
+library(haven)
+library(ggplot2)
+library(glmnet)
+```
+#Importing File
+```{r}
+path <- file.path("~/Library/Mobile Documents/com~apple~CloudDocs/MSBA CPP/Capstone Project/CLV_PROJ_2023-MAIN R/THREE.sav")
+dataset <- read_sav(path)
+```
+
+```{r}
+# Create a summarized data frame with the total number of orders and total number of mailings for each unique value in targmail
+df_summary <- dataset %>%
+  group_by(targmail) %>%
+  summarize(total_orders = sum(targords))
+
+# Bar chart with swapped axes
+ggplot(df_summary, aes(x = targmail, y = total_orders)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  xlab("Number of Prom 85 Mailings Sent") +
+  ylab("Number of Prom 85 Orders Placed") +
+  ggtitle("Relationship between Mailings Sent and Prom 85 Orders") +
+  theme_minimal()
+```
+
+```{r}
+library(ggplot2)
+
+# Create a summarized data frame with the total number of orders, total number of mailings, and sales for each unique value in targmail
+df_summary <- dataset %>%
+  group_by(targmail) %>%
+  summarize(total_orders = sum(targords),
+            total_sales = sum(targamnt))
+
+# Create a bar chart for the relationship between mailings and orders
+bar_chart <- ggplot(df_summary, aes(x = targmail, y = total_orders)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  xlab("Number of Prom 85 Mailings Sent (targmail)") +
+  ylab("Number of Prom 85 Orders Placed (targords)") +
+  ggtitle("Prom 85 Orders per Mailng") +
+  theme_minimal()
+
+# Create a scatter plot for the distribution of sales and orders
+scatter_plot <- ggplot(dataset, aes(x = targords, y = targamnt)) +
+  geom_point() +
+  xlab("Number of Prom 85 Orders Placed (targords)") +
+  ylab("Prom 85 Sales Amount (targamnt)") +
+  ggtitle("Prom 85 Sales per Order") +
+  theme_minimal()
+
+# Arrange the charts side by side
+library(gridExtra)
+grid.arrange(bar_chart, scatter_plot, ncol = 2)
+```
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+# Histogram for the distribution of orders placed
+hist_orders <- ggplot(dataset, aes(x = targords)) +
+  geom_histogram(binwidth = 1, fill = "green", alpha = 0.7) +
+  xlab("Number of Prom 85 Orders Placed") +
+  ylab("Frequency") +
+  ggtitle("Distribution of Orders Placed") +
+  theme_minimal()
+
+# Histogram for the distribution of sales amount
+hist_sales <- ggplot(dataset, aes(x = targamnt)) +
+  geom_histogram(binwidth = 100, fill = "blue", alpha = 0.7) +
+  xlab("Prom 85 Sales Amount") +
+  ylab("Frequency") +
+  ggtitle("Distribution of Sales Amount") +
+  theme_minimal()
+
+# Print the histograms
+print(hist_orders)
+print(hist_sales)
+```
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+# Apply logarithmic transformation to the data
+dataset$log_targords <- log(dataset$targords)
+dataset$log_targamnt <- log(dataset$targamnt)
+
+# Create histograms for the transformed data
+hist_log_orders <- ggplot(dataset, aes(x = log_targords)) +
+  geom_histogram(binwidth = 0.2, fill = "green", alpha = 0.7) +
+  xlab("Log of Number of Orders Placed") +
+  ylab("Frequency") +
+  ggtitle("Distribution of Log Orders Placed") +
+  theme_minimal()
+
+hist_log_sales <- ggplot(dataset, aes(x = log_targamnt)) +
+  geom_histogram(binwidth = 0.2, fill = "blue", alpha = 0.7) +
+  xlab("Log of Prom 85 Sales Amount") +
+  ylab("Frequency") +
+  ggtitle("Distribution of Log Sales Amount") +
+  theme_minimal()
+
+# Print the histograms
+print(hist_log_orders)
+print(hist_log_sales)
+```
+
+```{r}
+hist_sales <- ggplot(dataset, aes(x = targamnt)) +
+  geom_histogram(binwidth = 100, fill = "blue", alpha = 0.7) +
+  xlab("Prom 85 Sales Amount (targamnt)") +
+  ylab("Frequency") +
+  ggtitle("Distribution of Sales Amount") +
+  theme_minimal()
+
+# Logarithmic transformation
+dataset$log_targamnt <- log(dataset$targamnt)
+
+# Histogram for the distribution of log-transformed sales amount
+hist_log_sales <- ggplot(dataset, aes(x = log_targamnt)) +
+  geom_histogram(binwidth = 0.2, fill = "green", alpha = 0.7) +
+  xlab("Log of Prom 85 Sales Amount (targamnt)") +
+  ylab("Frequency") +
+  ggtitle("Distribution of Log Sales Amount") +
+  theme_minimal()
+
+# Arrange histograms side by side
+side_by_side <- grid.arrange(hist_sales, hist_log_sales, ncol = 2)
+
+# Print the side-by-side histograms
+print(side_by_side)
+```
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+
+# Histogram for the distribution of total sales
+hist_totsale <- ggplot(dataset, aes(x = totsale)) +
+  geom_histogram(binwidth = 100, fill = "blue", alpha = 0.7) +
+  xlab("Total Sales Amount (totsale)") +
+  ylab("Frequency") +
+  ggtitle("Distrib. of Total Sales Amount") +
+  theme_minimal()
+
+# Logarithmic transformation
+dataset$logtotsale <- log(dataset$totsale)
+
+# Histogram for the distribution of log-transformed total sales
+hist_logtotsale <- ggplot(dataset, aes(x = logtotsale)) +
+  geom_histogram(binwidth = 0.2, fill = "green", alpha = 0.7) +
+  xlab("Log of Total Sales Amount (totsale)") +
+  ylab("Frequency") +
+  ggtitle("Distrib. of Log Total Sales Amount") +
+  theme_minimal()
+
+# Arrange histograms side by side
+side_by_side_totsale <- grid.arrange(hist_totsale, hist_logtotsale, ncol = 2)
+
+# Print the side-by-side histograms for total sales
+print(side_by_side_totsale)
+```
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+
+# Histogram for the distribution of total sales
+hist_totord <- ggplot(dataset, aes(x = totord)) +
+  geom_histogram(binwidth = 100, fill = "blue", alpha = 0.7) +
+  xlab("Total Order Amount (totord)") +
+  ylab("Frequency") +
+  ggtitle("Distrib. of Total Order Amount") +
+  theme_minimal()
+
+# Logarithmic transformation
+dataset$logtotord <- log(dataset$totord)
+
+# Histogram for the distribution of log-transformed total sales
+hist_logtotord <- ggplot(dataset, aes(x = logtotord)) +
+  geom_histogram(binwidth = 0.2, fill = "green", alpha = 0.7) +
+  xlab("Log of Total Order Amount (totord)") +
+  ylab("Frequency") +
+  ggtitle("Distrib. of Log Total Order Amount") +
+  theme_minimal()
+
+# Arrange histograms side by side
+side_by_side_totord <- grid.arrange(hist_totord, hist_logtotord, ncol = 2)
+
+# Print the side-by-side histograms for total sales
+print(side_by_side_totord)
+```
+
+```{r}
+library(ggplot2)
+
+ggplot(dataset, aes(x = logtotord, y = logtotsale)) +
+  geom_point(color = "blue") +
+  labs(x = "Log Total Orders", y = "Log Total Sales") +
+  ggtitle("Relationship between Log Total Orders and Log Total Sales")
+```
+##Create avgsale variable
+```{r}
+totsale <- dataset$totsale
+totord <- dataset$totord
+
+small_positive_value <- 1e-6
+totsale[totsale <= 0] <- small_positive_value
+totord[totord <= 0] <- small_positive_value
+
+logtotsale <- log(totsale)
+logtotord <- log(totord)
+
+avgsale <- logtotsale/logtotord
+```
+
+##Mutate original dataset to create log totsale and log totord columns
+```{r}
+library(dplyr)
+
+# Assuming dataset is your original dataset
+dataset <- dataset %>%
+  mutate(log_totsale = log(totsale),
+         log_totord = log(totord))
+```
+###There were NaN's produced so we took the mean of each column to replace NaN's
+```{r}
+library(dplyr)
+
+# Assuming dataset is your original dataset
+dataset <- dataset %>%
+  mutate(log_totsale = ifelse(is.nan(log_totsale), mean(log_totsale, na.rm = TRUE), log_totsale),
+         log_totord = ifelse(is.nan(log_totord), mean(log_totord, na.rm = TRUE), log_totord))
+```
+
+##Add avgsale to original dataset
+```{r}
+# Assuming dataset is your original dataset
+dataset <- dataset %>%
+  mutate(avgsale = log_totsale / log_totord)
+```
+
+##Testing if there are missing values or inifinte values in avgsale
+```{r}
+# Check for missing values
+missing_values <- sum(is.na(dataset$avgsale))
+
+# Check for infinite values
+infinite_values <- sum(is.infinite(dataset$avgsale))
+
+if (missing_values > 0) {
+  cat("There are missing values in avgsale.\n")
+}
+
+if (infinite_values > 0) {
+  cat("There are infinite values in avgsale.\n")
+}
+```
+##There were infinite values so replaced them with a small value
+```{r}
+# Check for zero values in totord
+zero_denominator <- sum(dataset$totord == 0)
+
+if (zero_denominator > 0) {
+  cat("There are zero values in totord. You may need to handle these cases.\n")
+}
+
+# Add a small constant to denominator to avoid division by very small numbers
+small_constant <- 1e-6  # Choose an appropriate small value
+
+dataset <- dataset %>%
+  mutate(avgsale = totsale / (totord + small_constant))
+```
+
+#Quadratic Regression Model
+##Fit a quadratic model to the data and view summary
+```{r}
+# Fit a quadratic regression model
+model <- lm(avgsale ~ log_totord + I(log_totord^2), data = dataset)
+
+# Display the model summary
+summary(model)
+```
+
